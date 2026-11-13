@@ -1,93 +1,184 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserRole } from "@/lib/types";
-import { getStoredUserRole, setStoredUserRole, resetAllDataToSeed } from "@/lib/storage";
-import { ShieldCheck, UserCheck, RefreshCw, Bell, Search, AlertCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { UserRole, AuthUser } from "@/lib/types";
+import { getStoredUserRole } from "@/lib/storage";
+import { getClientSession, signOutUser } from "@/lib/auth";
+import { Menu, Settings, LogOut } from "lucide-react";
 
 export default function Header() {
+  const pathname = usePathname();
   const [role, setRole] = useState<UserRole>("owner");
-  const [isResetting, setIsResetting] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    setRole(getStoredUserRole());
+    const syncUser = () => {
+      setRole(getStoredUserRole());
+      const session = getClientSession();
+      if (session?.user) {
+        setCurrentUser(session.user);
+        if (session.user.role) setRole(session.user.role);
+      }
+    };
+    syncUser();
+    window.addEventListener("tpm_data_updated", syncUser);
+    return () => window.removeEventListener("tpm_data_updated", syncUser);
   }, []);
 
-  const handleRoleChange = (newRole: UserRole) => {
-    setRole(newRole);
-    setStoredUserRole(newRole);
+  const handleOpenMobileMenu = () => {
+    window.dispatchEvent(new Event("tpm_toggle_mobile_menu"));
   };
 
-  const handleResetData = () => {
-    if (confirm("Reset application data back to historical October 2026 Excel records? Any newly entered test data will be refreshed.")) {
-      setIsResetting(true);
-      resetAllDataToSeed();
-      setTimeout(() => {
-        setIsResetting(false);
-        window.location.reload();
-      }, 500);
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to sign out of TPM ERP?")) {
+      await signOutUser();
+      window.location.href = "/login";
     }
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-20 shadow-sm no-print">
-      {/* Left: Organization Title */}
-      <div className="flex items-center gap-4">
-        <div>
-          <h2 className="text-base font-bold text-[#14243A] tracking-tight">
-            THE PRAMOD MAHARAJ ENTERPRISES
-          </h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Building Materials, Cement, Steel & Electricals ERP
-          </p>
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-2xs no-print">
+      {/* Desktop Header (1024px and above) */}
+      <div className="hidden lg:flex h-16 px-6 items-center justify-between">
+        {/* Left: Organization Title */}
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-[#14243A] tracking-tight truncate">
+              THE PRAMOD MAHARAJ ENTERPRISES
+            </h2>
+            <p className="text-xs text-slate-500 font-medium truncate">
+              Building Materials, Cement, Steel & Electricals ERP
+            </p>
+          </div>
+        </div>
+
+        {/* Right: User Profile Badge, Settings & Logout */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/settings"
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors"
+            title="Account & System Settings"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-black text-xs border border-blue-200 shrink-0">
+              {role === "owner" ? "PM" : role === "manager" ? "MN" : role === "admin" ? "AD" : "OP"}
+            </div>
+            <div className="leading-tight text-left">
+              <div className="text-xs font-bold text-slate-800">
+                {currentUser?.fullName || (role === "owner" ? "Pramod Maharaj" : `${role.toUpperCase()} User`)}
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium capitalize flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>{role} Account</span>
+              </div>
+            </div>
+            <Settings className="w-3.5 h-3.5 text-slate-400 ml-1" />
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Sign out of TPM ERP"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-700 text-xs font-semibold transition-colors shadow-2xs ml-1"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
 
-      {/* Right: Actions, Role Selector & User */}
-      <div className="flex items-center gap-4">
-        {/* Reset to Seed Button */}
-        <button
-          onClick={handleResetData}
-          disabled={isResetting}
-          title="Reset database state to original October 2026 Excel records"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-2xs"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isResetting ? "animate-spin" : ""}`} />
-          <span>Reset Demo Data</span>
-        </button>
-
-        {/* Live Role Switcher */}
-        <div className="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
-          <span className="text-[11px] font-semibold text-slate-500 px-2 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" /> Role:
-          </span>
-          {(["owner", "manager", "operator"] as UserRole[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => handleRoleChange(r)}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md capitalize transition-all ${
-                role === r
-                  ? "bg-white text-blue-600 shadow-2xs font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-
-        {/* User Profile Badge */}
-        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-blue-200">
-            {role === "owner" ? "PM" : role === "manager" ? "MN" : "OP"}
+      {/* Tablet Header (768px to 1023px) */}
+      <div className="hidden md:flex lg:hidden h-14 px-4 items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+            TPM
           </div>
-          <div className="hidden md:block leading-tight text-left">
-            <div className="text-xs font-semibold text-slate-800 capitalize">
-              {role === "owner" ? "Pramod Maharaj" : `${role} User`}
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-[#14243A] tracking-tight truncate">
+              THE PRAMOD MAHARAJ ENTERPRISES
             </div>
-            <div className="text-[10px] text-slate-500 capitalize">{role} Account</div>
+            <div className="text-[11px] text-slate-500 truncate">
+              Building Materials, Cement, Steel & Electricals ERP
+            </div>
           </div>
         </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/settings"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700"
+          >
+            <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+              {role === "owner" ? "PM" : role === "manager" ? "MN" : role === "admin" ? "AD" : "OP"}
+            </span>
+            <span className="capitalize">{role}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Logout"
+            className="w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center shadow-2xs"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenMobileMenu}
+            aria-label="Open navigation menu"
+            className="w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[#14243A] flex items-center justify-center shadow-2xs"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Header (Below 768px) */}
+      <div className="md:hidden px-3.5 py-2.5 space-y-2">
+        {/* First Row: TPM Logo + Short Business Name + Logout + Hamburger Menu */}
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#14243A] text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 border border-blue-500/30">
+              TPM
+            </div>
+            <span className="font-extrabold text-sm text-[#14243A] tracking-tight truncate">
+              PRAMOD MAHARAJ
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Logout"
+              className="w-8 h-8 rounded-lg border border-slate-200 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 flex items-center justify-center"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenMobileMenu}
+              aria-label="Open navigation menu"
+              className="w-9 h-9 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[#14243A] flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Second Row: Dashboard Title & Subtitle (When on Dashboard) */}
+        {pathname === "/" && (
+          <div className="pt-1.5 border-t border-slate-100">
+            <h1 className="text-base font-bold text-[#14243A] tracking-tight leading-snug">
+              Financial & Operations Dashboard
+            </h1>
+            <p className="text-[11px] text-slate-500 font-medium leading-tight">
+              Business financial overview
+            </p>
+          </div>
+        )}
       </div>
     </header>
   );

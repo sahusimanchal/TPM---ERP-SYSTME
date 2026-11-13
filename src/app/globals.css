@@ -30,16 +30,50 @@ body {
   background: #64748B;
 }
 
-/* Print Invoice Styles */
+/* Print Invoice & Ledger Styles */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
   body {
     background: white !important;
-    color: black !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .no-print {
+
+  .no-print,
+  .no-print * {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
+  }
+
+  /* When printing the Customer Ledger Statement */
+  body.printing-ledger * {
+    visibility: hidden;
+  }
+
+  body.printing-ledger #printable-ledger-doc,
+  body.printing-ledger #printable-ledger-doc * {
+    visibility: visible;
+  }
+
+  body.printing-ledger #printable-ledger-doc {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
   }
 }

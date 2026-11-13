@@ -1,4 +1,24 @@
-export type UserRole = 'owner' | 'manager' | 'operator';
+export type UserRole = 'owner' | 'manager' | 'admin' | 'operator' | 'viewer';
+export type PortalRole = 'owner' | 'manager' | 'admin';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  fullName: string;
+  role: UserRole;
+  businessId?: string;
+  businessName?: string;
+  isActive: boolean;
+  avatarUrl?: string;
+  lastLogin?: string;
+}
+
+export interface AuthSession {
+  user: AuthUser;
+  token: string;
+  expiresAt: number;
+}
 
 export type BillCategory = 'cement' | 'rod' | 'daily';
 export type BillStatus = 'draft' | 'posted' | 'voided';
@@ -87,9 +107,14 @@ export type PaymentMode = 'CASH' | 'UPI' | 'CC UPI' | 'SBI' | 'BANK_TRANSFER' | 
 export interface PaymentAllocation {
   id: string;
   payment_id: string;
+  payment_receipt_number?: string;
+  payment_date?: string | null;
   bill_id: string;
   bill_number: string;
+  bill_date?: string | null;
   allocated_amount: number;
+  allocated_by?: string;
+  notes?: string;
   created_at: string;
 }
 
@@ -174,3 +199,55 @@ export interface DashboardMetrics {
   unallocated_advances: number;
   data_quality_issues_count: number;
 }
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  entity: string;
+  actor: string;
+  timestamp: string;
+  notes: string;
+}
+
+export interface CementBrand {
+  id: string;
+  name: string;
+  defaultRate: number;
+  isActive: boolean;
+  notes?: string;
+  updatedAt?: string;
+}
+
+export interface RodSize {
+  id: string;
+  size: string;
+  defaultRate: number;
+  isActive: boolean;
+  notes?: string;
+  updatedAt?: string;
+}
+
+export interface PaymentModeOption {
+  id: string;
+  code: string;
+  label: string;
+  isActive: boolean;
+  isSystem?: boolean;
+}
+
+export interface ExpenseCategoryOption {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface BusinessProfile {
+  name: string;
+  gstin: string;
+  phone: string;
+  email: string;
+  address: string;
+  updatedAt?: string;
+}
+
+

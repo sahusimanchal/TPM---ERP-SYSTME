@@ -126,16 +126,24 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {Object.entries(brandStats).map(([brand, stat]) => (
-                <tr key={brand} className="hover:bg-slate-50/70">
-                  <td className="py-3 px-4 font-bold text-slate-900">{brand}</td>
-                  <td className="py-3 px-4 text-center font-bold text-blue-600">{stat.bags} Bags</td>
-                  <td className="py-3 px-4 text-right font-bold text-slate-900">{formatCurrency(stat.amount)}</td>
-                  <td className="py-3 px-4 text-right text-slate-500 font-mono">
-                    ₹{(stat.amount / (stat.bags || 1)).toFixed(2)}
+              {Object.keys(brandStats).length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-slate-400 text-xs font-medium">
+                    No cement sales recorded yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                Object.entries(brandStats).map(([brand, stat]) => (
+                  <tr key={brand} className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 font-bold text-slate-900">{brand}</td>
+                    <td className="py-3 px-4 text-center font-bold text-blue-600">{stat.bags} Bags</td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-900">{formatCurrency(stat.amount)}</td>
+                    <td className="py-3 px-4 text-right text-slate-500 font-mono">
+                      ₹{(stat.amount / (stat.bags || 1)).toFixed(2)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -160,15 +168,23 @@ export default function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {topDebtors.map((cust) => (
-                <tr key={cust.id} className="hover:bg-slate-50/70">
-                  <td className="py-3 px-4 font-bold text-slate-900">{cust.name}</td>
-                  <td className="py-3 px-4 text-slate-500">{cust.phone || "—"}</td>
-                  <td className="py-3 px-4 text-right font-medium text-slate-700">{formatCurrency(cust.total_bills_amount)}</td>
-                  <td className="py-3 px-4 text-right font-medium text-emerald-700">{formatCurrency(cust.total_paid_amount)}</td>
-                  <td className="py-3 px-4 text-right font-black text-rose-600 text-sm">{formatCurrency(cust.current_balance)}</td>
+              {topDebtors.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-slate-400 text-xs font-medium">
+                    No pending customer dues. All customer balances cleared.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                topDebtors.map((cust) => (
+                  <tr key={cust.id} className="hover:bg-slate-50/70">
+                    <td className="py-3 px-4 font-bold text-slate-900">{cust.name}</td>
+                    <td className="py-3 px-4 text-slate-500">{cust.phone || "—"}</td>
+                    <td className="py-3 px-4 text-right font-medium text-slate-700">{formatCurrency(cust.total_bills_amount)}</td>
+                    <td className="py-3 px-4 text-right font-medium text-emerald-700">{formatCurrency(cust.total_paid_amount)}</td>
+                    <td className="py-3 px-4 text-right font-black text-rose-600 text-sm">{formatCurrency(cust.current_balance)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

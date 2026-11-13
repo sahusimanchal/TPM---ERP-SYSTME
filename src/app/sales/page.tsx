@@ -2,19 +2,21 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getBills } from "@/lib/storage";
-import { Bill, BillCategory } from "@/lib/types";
+import { getBills, getBusinessProfile } from "@/lib/storage";
+import { Bill, BillCategory, BusinessProfile } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Search, PlusCircle, Printer, Eye, Filter, X, Receipt } from "lucide-react";
 
 export default function SalesPage() {
   const [bills, setBills] = useState<Bill[]>([]);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(getBusinessProfile());
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"all" | BillCategory>("all");
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
 
   const loadData = () => {
     setBills(getBills());
+    setBusinessProfile(getBusinessProfile());
   };
 
   useEffect(() => {
@@ -99,64 +101,72 @@ export default function SalesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filtered.slice(0, 50).map((bill) => (
-                <tr key={bill.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-blue-600">
-                    {bill.bill_number}
-                  </td>
-                  <td className="py-3 px-4 text-slate-500 font-medium">
-                    {formatDate(bill.bill_date)}
-                  </td>
-                  <td className="py-3 px-4 font-semibold text-slate-900">
-                    {bill.customer_name}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      bill.bill_category === "cement" 
-                        ? "bg-emerald-100 text-emerald-800" 
-                        : bill.bill_category === "rod"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}>
-                      {bill.bill_category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-600">
-                    {bill.cement_details ? (
-                      <span>{bill.cement_details.qty_bags} Bags • {bill.cement_details.cement_type} (₹{bill.cement_details.unit_rate}/bag)</span>
-                    ) : bill.rod_details ? (
-                      <span>{bill.rod_details.qty_kg} Kg • {bill.rod_details.rod_size} (₹{bill.rod_details.rate_per_kg}/kg)</span>
-                    ) : (
-                      <span>{bill.items[0]?.item_name || "Electrical Goods"}</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right font-bold text-slate-900">
-                    {formatCurrency(bill.total_amount)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      bill.payment_status === "legacy_paid_yes" || bill.payment_status === "paid"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}>
-                      {bill.payment_status === "legacy_paid_yes" 
-                        ? "Legacy Paid" 
-                        : bill.payment_status === "paid"
-                        ? "Paid"
-                        : "Unpaid / Credit"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => setSelectedBill(bill)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>View</span>
-                    </button>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-400 text-xs font-medium">
+                    No sales invoices found. Click &quot;New Invoice&quot; to create your first bill.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.slice(0, 50).map((bill) => (
+                  <tr key={bill.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                      {bill.bill_number}
+                    </td>
+                    <td className="py-3 px-4 text-slate-500 font-medium">
+                      {formatDate(bill.bill_date)}
+                    </td>
+                    <td className="py-3 px-4 font-semibold text-slate-900">
+                      {bill.customer_name}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        bill.bill_category === "cement" 
+                          ? "bg-emerald-100 text-emerald-800" 
+                          : bill.bill_category === "rod"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}>
+                        {bill.bill_category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      {bill.cement_details ? (
+                        <span>{bill.cement_details.qty_bags} Bags • {bill.cement_details.cement_type} (₹{bill.cement_details.unit_rate}/bag)</span>
+                      ) : bill.rod_details ? (
+                        <span>{bill.rod_details.qty_kg} Kg • {bill.rod_details.rod_size} (₹{bill.rod_details.rate_per_kg}/kg)</span>
+                      ) : (
+                        <span>{bill.items[0]?.item_name || "Electrical Goods"}</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right font-bold text-slate-900">
+                      {formatCurrency(bill.total_amount)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        bill.payment_status === "legacy_paid_yes" || bill.payment_status === "paid"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                      }`}>
+                        {bill.payment_status === "legacy_paid_yes" 
+                          ? "Legacy Paid" 
+                          : bill.payment_status === "paid"
+                          ? "Paid"
+                          : "Unpaid / Credit"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => setSelectedBill(bill)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>View</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -179,9 +189,9 @@ export default function SalesPage() {
             {/* Printable Invoice Card */}
             <div className="p-4 my-4 border border-slate-200 rounded-xl bg-slate-50/50 space-y-4 text-xs font-mono">
               <div className="text-center border-b border-dashed border-slate-300 pb-3">
-                <div className="font-bold text-base text-slate-900">THE PRAMOD MAHARAJ ENTERPRISES</div>
-                <div className="text-slate-500 text-[11px]">Bhubaneswar, Odisha • GSTIN: 21AAAAA1234A1Z5</div>
-                <div className="text-slate-500 text-[11px]">Ph: +91 94370 12345</div>
+                <div className="font-bold text-base text-slate-900">{businessProfile.name}</div>
+                <div className="text-slate-500 text-[11px]">{businessProfile.address} • GSTIN: {businessProfile.gstin}</div>
+                <div className="text-slate-500 text-[11px]">Ph: {businessProfile.phone}</div>
               </div>
 
               <div className="flex justify-between">

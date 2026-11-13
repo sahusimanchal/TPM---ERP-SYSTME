@@ -1,10 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getCashTransactions, saveCashTransactions, getPayments } from "@/lib/storage";
-import { CashTransaction } from "@/lib/types";
+import { 
+  getCashTransactions, 
+  saveCashTransactions, 
+  getPayments,
+  getExpenseCategories,
+  getStoredUserRole
+} from "@/lib/storage";
+import { CashTransaction, ExpenseCategoryOption } from "@/lib/types";
 import { formatCurrency, formatDate, getTodayDateString } from "@/lib/utils";
-import { Banknote, Search, Plus, Filter, Tag, Check, AlertCircle, ArrowDownCircle, Wallet } from "lucide-react";
+import { getClientSession } from "@/lib/auth";
+import { 
+  Banknote, 
+  Search, 
+  Plus, 
+  Filter, 
+  Tag, 
+  Check, 
+  AlertCircle, 
+  ArrowDownCircle, 
+  Wallet, 
+  X,
+  Settings2
+} from "lucide-react";
+import { ExpenseCategoryManagerModal } from "@/components/admin/MasterCatalogModals";
 
 export default function CashFlowPage() {
   const [transactions, setTransactions] = useState<CashTransaction[]>([]);
@@ -19,8 +39,18 @@ export default function CashFlowPage() {
   const [category, setCategory] = useState("Shop Expense");
   const [notes, setNotes] = useState("");
 
+  // Dynamic Master Expense Categories
+  const [expenseCats, setExpenseCats] = useState<ExpenseCategoryOption[]>([]);
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const loadData = () => {
     setTransactions(getCashTransactions());
+    setExpenseCats(getExpenseCategories());
+
+    const session = getClientSession();
+    const role = session?.user?.role || getStoredUserRole();
+    setIsAdmin(role === "admin" || role === "owner");
   };
 
   useEffect(() => {
@@ -161,50 +191,54 @@ export default function CashFlowPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filtered.map((tx) => (
-                <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-slate-600">
-                    {tx.reference_number || "VCH-HIST"}
-                  </td>
-                  <td className="py-3 px-4 text-slate-500 font-medium">
-                    {formatDate(tx.transaction_date)}
-                  </td>
-                  <td className="py-3 px-4 font-bold text-slate-900">
-                    {tx.recipient_name}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      tx.category === "Godown Transfer"
-                        ? "bg-purple-100 text-purple-800"
-                        : tx.category === "Shop Expense"
-                        ? "bg-blue-100 text-blue-800"
-                        : tx.category === "Transport"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-rose-100 text-rose-800"
-                    }`}>
-                      {tx.category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right font-black text-rose-600 text-sm">
-                    {formatCurrency(tx.amount)}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <select
-                      value={tx.category}
-                      onChange={(e) => handleCategorize(tx.id, e.target.value)}
-                      className="px-2 py-1 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-700"
-                    >
-                      <option value="Godown Transfer">Godown Transfer</option>
-                      <option value="Shop Expense">Shop Expense</option>
-                      <option value="Supplier Payment">Supplier Payment</option>
-                      <option value="Staff Salary/Advance">Staff Advance</option>
-                      <option value="Transport">Transport / Auto</option>
-                      <option value="Rent">Shop Rent</option>
-                      <option value="Uncategorized Outflow">Uncategorized</option>
-                    </select>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-400 text-xs font-medium">
+                    No cash disbursements recorded. Click &quot;Record Outflow&quot; to log a payment.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-600">
+                      {tx.reference_number || "VCH-HIST"}
+                    </td>
+                    <td className="py-3 px-4 text-slate-500 font-medium">
+                      {formatDate(tx.transaction_date)}
+                    </td>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      {tx.recipient_name}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        tx.category === "Godown Transfer"
+                          ? "bg-purple-100 text-purple-800"
+                          : tx.category === "Shop Expense"
+                          ? "bg-blue-100 text-blue-800"
+                          : tx.category === "Transport"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-rose-100 text-rose-800"
+                      }`}>
+                        {tx.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right font-black text-rose-600 text-sm">
+                      {formatCurrency(tx.amount)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <select
+                        value={tx.category}
+                        onChange={(e) => handleCategorize(tx.id, e.target.value)}
+                        className="px-2 py-1 rounded border border-slate-200 bg-white text-[11px] font-semibold text-slate-700"
+                      >
+                        {expenseCats.filter(c => c.isActive || c.name === tx.category).map(c => (
+                          <option key={c.id} value={c.name}>{c.name}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -246,18 +280,28 @@ export default function CashFlowPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Category *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-slate-700">Category *</label>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCatModal(true)}
+                        className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 hover:text-rose-900 bg-rose-100 hover:bg-rose-200 px-2 py-0.5 rounded transition-colors"
+                        title="Admin: Configure Outflow Categories"
+                      >
+                        <Settings2 className="w-3 h-3" />
+                        <span>Manage</span>
+                      </button>
+                    )}
+                  </div>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white font-semibold"
                   >
-                    <option value="Shop Expense">Shop Expense</option>
-                    <option value="Godown Transfer">Godown Transfer</option>
-                    <option value="Supplier Payment">Supplier Payment</option>
-                    <option value="Staff Salary/Advance">Staff Advance</option>
-                    <option value="Transport">Transport / Auto</option>
-                    <option value="Rent">Shop Rent</option>
+                    {expenseCats.filter(c => c.isActive || c.name === category).map(c => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -305,6 +349,13 @@ export default function CashFlowPage() {
           </div>
         </div>
       )}
+
+      {/* Admin Expense Category Modal */}
+      <ExpenseCategoryManagerModal
+        isOpen={showCatModal}
+        onClose={() => setShowCatModal(false)}
+        onCategoryCreated={(c) => setCategory(c.name)}
+      />
     </div>
   );
 }

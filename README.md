@@ -40,8 +40,12 @@ npm install
 ```
 
 ### 3. Run the Development Server
+**Windows (One-Click):**
+Simply double-click `start.bat` in the project root. It will boot the development server and automatically open `http://localhost:3000` in your default browser.
+
+**Or via Terminal:**
 ```bash
-npm run dev
+npm.cmd run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.

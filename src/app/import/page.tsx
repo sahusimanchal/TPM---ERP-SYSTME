@@ -114,7 +114,7 @@ export default function ImportPage() {
             rowCount: dataRows.length,
             totalAmount: totalAmt,
             missingDates,
-            missingAmounts,
+            missingAmounts: missingAmts,
             notes: note
           });
         }
